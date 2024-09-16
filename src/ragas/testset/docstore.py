@@ -228,9 +228,10 @@ class InMemoryDocumentStore(DocumentStore):
             raise_exceptions=True,
             run_config=self.run_config,
         )
+
         result_idx = 0
         for i, n in enumerate(nodes):
-            if n.embedding is None:
+            if (hasattr(n.embedding, "repr") and not n.embedding.repr) or n.embedding is None:
                 nodes_to_embed.update({i: result_idx})
                 executor.submit(
                     self.embeddings.embed_text,
@@ -239,7 +240,7 @@ class InMemoryDocumentStore(DocumentStore):
                 )
                 result_idx += 1
 
-            if not n.keyphrases:
+            if (hasattr(n.keyphrases, "repr") and not n.keyphrases.repr) or not n.keyphrases:
                 nodes_to_extract.update({i: result_idx})
                 executor.submit(
                     self.extractor.extract,
@@ -260,6 +261,7 @@ class InMemoryDocumentStore(DocumentStore):
                 n.keyphrases = keyphrases
 
             if n.embedding is not None and n.keyphrases != []:
+                n.relationships = {}
                 self.nodes.append(n)
                 self.node_map[n.doc_id] = n
                 assert isinstance(

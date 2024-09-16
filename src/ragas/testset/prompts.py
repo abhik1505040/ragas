@@ -18,7 +18,7 @@ reasoning_question_prompt = Prompt(
     Answering the question should require the reader to make multiple logical connections or inferences using the information available in given context.
     Rules to follow when rewriting question:
     1. Ensure that the rewritten question can be answered entirely from the information present in the contexts.
-    2. Do not frame questions that contains more than 15 words. Use abbreviation wherever possible.
+    2. Do not frame questions that contains more than 30 words. Use abbreviation wherever possible.
     3. Make sure the question is clear and unambiguous.
     4. phrases like 'based on the provided context','according to the context',etc are not allowed to appear in the question.""",
     examples=[
@@ -75,7 +75,7 @@ conditional_question_prompt = Prompt(
     instruction="""Rewrite the provided question to increase its complexity by introducing a conditional element.
     The goal is to make the question more intricate by incorporating a scenario or condition that affects the context of the question.
     Follow the rules given below while rewriting the question.
-        1. The rewritten question should not be longer than 25 words. Use abbreviation wherever possible.
+        1. The rewritten question should not be longer than 30 words. Use abbreviation wherever possible.
         2. The rewritten question must be reasonable and must be understood and responded by humans.
         3. The rewritten question must be fully answerable from information present context.
         4. phrases like 'provided context','according to the context?',etc are not allowed to appear in the question.""",
@@ -390,7 +390,7 @@ Structure your JSON output to reflect these criteria as keys with their correspo
 filter_question_prompt = Prompt(
     name="filter_question",
     instruction="""
-Asses the given question for clarity and answerability given enough domain knowledge, consider the following criteria:
+Assess the given question for clarity and answerability given enough domain knowledge, consider the following criteria:
 1.Independence: Can the question be understood and answered without needing additional context or access to external references not provided within the question itself? Questions should be self-contained, meaning they do not rely on specific documents, tables, or prior knowledge not shared within the question.
 2.Clear Intent: Is it clear what type of answer or information the question seeks? The question should convey its purpose without ambiguity, allowing for a direct and relevant response.
 Based on these criteria, assign a verdict of "1" if a question is specific, independent, and has a clear intent, making it understandable and answerable based on the details provided. Assign "0" if it fails to meet one or more of these criteria due to vagueness, reliance on external references, or ambiguity in intent.

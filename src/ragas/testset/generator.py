@@ -98,7 +98,7 @@ class TestsetGenerator:
         if docstore is None:
             from langchain.text_splitter import TokenTextSplitter
 
-            splitter = TokenTextSplitter(chunk_size=chunk_size, chunk_overlap=0)
+            splitter = TokenTextSplitter(model_name='gpt-4o', chunk_size=chunk_size, chunk_overlap=0)
             docstore = InMemoryDocumentStore(
                 splitter=splitter,
                 embeddings=embeddings_model,

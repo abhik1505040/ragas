@@ -187,66 +187,75 @@ class Evolution:
     ):
         assert self.generator_llm is not None, "generator_llm cannot be None"
 
-        node_content = [
-            f"{i+1}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
-        ]
-        results = await self.generator_llm.generate(
-            prompt=self.find_relevant_context_prompt.format(
-                question=question, contexts=node_content
-            )
-        )
-        relevant_contexts_result = await json_loader.safe_load(
-            results.generations[0][0].text.strip(), llm=self.generator_llm
-        )
-        relevant_context_indices = (
-            relevant_contexts_result.get("relevant_contexts", None)
-            if isinstance(relevant_contexts_result, dict)
-            else None
-        )
-
-        if relevant_context_indices is not None:
-            relevant_context_indices = [
-                idx for idx in relevant_context_indices if isinstance(idx, int)
-            ]
-
-        if relevant_context_indices is None or not relevant_context_indices:
-            relevant_context = CurrentNodes(
-                root_node=current_nodes.root_node, nodes=current_nodes.nodes
+        if isinstance(question, tuple) and len(question) == 3:
+            return DataRow(
+                question=question[0].strip('"'),
+                contexts=[question[2].page_content],
+                ground_truth=question[1],
+                evolution_type=evolution_type,
+                metadata=[question[2].metadata],
             )
         else:
-            selected_nodes = [
-                current_nodes.nodes[i - 1]
-                for i in relevant_context_indices
-                if i - 1 < len(current_nodes.nodes)
+            node_content = [
+                f"{i+1}\t{n.page_content}" for i, n in enumerate(current_nodes.nodes)
             ]
-            relevant_context = (
-                CurrentNodes(root_node=selected_nodes[0], nodes=selected_nodes)
-                if selected_nodes
-                else current_nodes
+            results = await self.generator_llm.generate(
+                prompt=self.find_relevant_context_prompt.format(
+                    question=question, contexts=node_content
+                )
+            )
+            relevant_contexts_result = await json_loader.safe_load(
+                results.generations[0][0].text.strip(), llm=self.generator_llm
+            )
+            relevant_context_indices = (
+                relevant_contexts_result.get("relevant_contexts", None)
+                if isinstance(relevant_contexts_result, dict)
+                else None
             )
 
-        merged_nodes = self.merge_nodes(relevant_context)
-        results = await self.generator_llm.generate(
-            prompt=self.question_answer_prompt.format(
-                question=question, context=merged_nodes.page_content
-            )
-        )
-        answer = await json_loader.safe_load(
-            results.generations[0][0].text.strip(), self.generator_llm
-        )
-        answer = answer if isinstance(answer, dict) else {}
-        logger.debug("answer generated: %s", answer)
-        answer = (
-            np.nan if answer.get("verdict") == "-1" else answer.get("answer", np.nan)
-        )
+            if relevant_context_indices is not None:
+                relevant_context_indices = [
+                    idx for idx in relevant_context_indices if isinstance(idx, int)
+                ]
 
-        return DataRow(
-            question=question.strip('"'),
-            contexts=[n.page_content for n in relevant_context.nodes],
-            ground_truth=answer,
-            evolution_type=evolution_type,
-            metadata=[n.metadata for n in relevant_context.nodes],
-        )
+            if relevant_context_indices is None or not relevant_context_indices:
+                relevant_context = CurrentNodes(
+                    root_node=current_nodes.root_node, nodes=current_nodes.nodes
+                )
+            else:
+                selected_nodes = [
+                    current_nodes.nodes[i - 1]
+                    for i in relevant_context_indices
+                    if i - 1 < len(current_nodes.nodes)
+                ]
+                relevant_context = (
+                    CurrentNodes(root_node=selected_nodes[0], nodes=selected_nodes)
+                    if selected_nodes
+                    else current_nodes
+                )
+
+            merged_nodes = self.merge_nodes(relevant_context)
+            results = await self.generator_llm.generate(
+                prompt=self.question_answer_prompt.format(
+                    question=question, context=merged_nodes.page_content
+                )
+            )
+            answer = await json_loader.safe_load(
+                results.generations[0][0].text.strip(), self.generator_llm
+            )
+            answer = answer if isinstance(answer, dict) else {}
+            logger.debug("answer generated: %s", answer)
+            answer = (
+                np.nan if answer.get("verdict") == "-1" else answer.get("answer", np.nan)
+            )
+
+            return DataRow(
+                question=question.strip('"'),
+                contexts=[n.page_content for n in relevant_context.nodes],
+                ground_truth=answer,
+                evolution_type=evolution_type,
+                metadata=[n.metadata for n in relevant_context.nodes],
+            )
 
     def adapt(self, language: str, cache_dir: t.Optional[str] = None) -> None:
         """

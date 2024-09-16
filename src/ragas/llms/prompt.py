@@ -6,7 +6,7 @@ import logging
 import os
 import typing as t
 
-from langchain_core.messages import BaseMessage, HumanMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_core.prompt_values import PromptValue as BasePromptValue
 from langchain_core.pydantic_v1 import BaseModel, root_validator
 
@@ -21,10 +21,19 @@ logger = logging.getLogger(__name__)
 
 class PromptValue(BasePromptValue):
     prompt_str: str
+    system_prompt: str
 
     def to_messages(self) -> t.List[BaseMessage]:
         """Return prompt as a list of Messages."""
-        return [HumanMessage(content=self.to_string())]
+        data = [HumanMessage(content=self.to_string())]
+        
+        if self.system_prompt:
+            data = [
+                SystemMessage(content=self.system_prompt),
+                HumanMessage(content=self.to_string())
+            ]  
+
+        return data
 
     def to_string(self) -> str:
         return self.prompt_str
@@ -43,6 +52,8 @@ class Prompt(BaseModel):
         output_key (str): The output variable name.
         output_type (Literal["json", "str"]): The type of the output (default: "json").
         language (str): The language of the prompt (default: "english").
+        system_prompt (str): System prompt
+        
     """
 
     name: str = ""
@@ -53,6 +64,8 @@ class Prompt(BaseModel):
     output_key: str = ""
     output_type: t.Literal["json", "str"] = "json"
     language: str = "english"
+    system_prompt: str = ""
+    
 
     @root_validator
     def validate_prompt(cls, values: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
@@ -163,7 +176,7 @@ class Prompt(BaseModel):
                 kwargs[key] = json.dumps(value)
 
         prompt = self.to_string()
-        return PromptValue(prompt_str=prompt.format(**kwargs))
+        return PromptValue(prompt_str=prompt.format(**kwargs), system_prompt=self.system_prompt)
 
     def adapt(
         self, language: str, llm: BaseRagasLLM, cache_dir: t.Optional[str] = None
