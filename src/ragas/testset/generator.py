@@ -59,8 +59,10 @@ class TestDataset:
     test_data: t.List[DataRow]
 
     def _to_records(self) -> t.List[t.Dict]:
+        test_data = list(dict.fromkeys(self.test_data))
         data_samples = []
-        for data in self.test_data:
+        
+        for data in test_data:
             data_dict = dict(data)
             data_dict["episode_done"] = True
             data_samples.append(data_dict)

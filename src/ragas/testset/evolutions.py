@@ -46,6 +46,9 @@ class DataRow(BaseModel):
     evolution_type: str
     metadata: t.List[dict]
 
+    def __hash__(self):
+        return hash(self.question)
+
 
 @dataclass
 class Evolution:
